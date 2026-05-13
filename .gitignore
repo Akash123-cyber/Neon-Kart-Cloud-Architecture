@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Database
+users.db
+
+# Documentation & Examples (Directories need a slash)
+UI examples/
+synopsis/
+
+# Specific Markdown files
+Implementation.md
+scenarios.md
+strategy.md
+report.md
+technical_architecture.md
+.agents

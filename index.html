@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Kart (Advanced UI Update)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="screen active">
+        <h1 class="logo-text">NEON KARTS</h1>
+        <div class="loader-container">
+            <div id="loading-bar"></div>
+        </div>
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="main-menu" class="screen">
+        <div class="side-panel">
+            <div class="panel-box" id="auth-box">
+                <p><strong>Account</strong></p>
+                <div id="user-display">
+                    <p id="guest-name">Guest User</p>
+                    <button class="blue-btn small-btn" id="open-login-btn">Sign In/Up</button>
+                </div>
+            </div>
+            <div class="panel-box" style="position: relative;">
+                <button id="stats-info-btn" class="info-btn">i</button>
+                <div id="stats-tooltip" class="tooltip-box">
+                    Matches and Wins are tracked from PvP sessions only.<br>High Score is tracked from Solo Play only.
+                </div>
+                <p><strong>Stats</strong></p>
+                <p>Wins: <span id="stats-wins">0</span></p>
+                <p>Matches: <span id="stats-matches">0</span></p>
+                <p>High Score: <span id="stats-highscore">0</span></p>
+            </div>
+        </div>
+
+        <div class="center-stage">
+            <h1 class="logo-text main-logo">NEON KARTS</h1>
+            <div class="kart-preview">🏎️</div>
+            
+            <div class="action-buttons">
+                <button id="solo-play-btn" class="orange-btn huge-btn">▶ SOLO PLAY</button>
+                <div class="sub-actions">
+                    <button id="open-create-btn" class="blue-btn">Create Room</button>
+                    <button id="open-join-btn" class="blue-btn">Join PvP</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-corner">
+            <button class="icon-btn" id="main-settings-btn">⚙️</button>
+        </div>
+    </div>
+
+    <!-- Solo Setup Modal -->
+    <div id="solo-setup-modal" class="modal-overlay">
+        <div class="modal">
+            <button class="close-modal">X</button>
+            <h2>Solo Mode Setup</h2>
+            <div class="setting-row">
+                <span>Theme:</span>
+                <select id="solo-theme" class="text-input">
+                    <option value="neon">Neon</option>
+                    <option value="jungle">Jungle</option>
+                    <option value="desert">Desert</option>
+                    <option value="snow">Snow</option>
+                </select>
+            </div>
+            <div class="setting-row">
+                <span>Difficulty:</span>
+                <select id="solo-difficulty" class="text-input">
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+            </div>
+            <div class="setting-row">
+                <span>Duration (Mins):</span>
+                <select id="solo-duration" class="text-input">
+                    <option value="5">5</option><option value="10">10</option>
+                    <option value="15">15</option><option value="20">20</option>
+                    <option value="25">25</option><option value="30">30</option>
+                </select>
+            </div>
+            <button id="start-solo-btn" class="green-btn">Start Game</button>
+        </div>
+    </div>
+
+    <!-- Create Room Setup Modal -->
+    <div id="create-setup-modal" class="modal-overlay">
+        <div class="modal">
+            <button class="close-modal">X</button>
+            <h2>Create PvP Room</h2>
+            <div class="setting-row">
+                <span>Theme:</span>
+                <select id="pvp-theme" class="text-input">
+                    <option value="neon">Neon</option><option value="jungle">Jungle</option>
+                    <option value="desert">Desert</option><option value="snow">Snow</option>
+                </select>
+            </div>
+            <div class="setting-row">
+                <span>Duration (Mins):</span>
+                <select id="pvp-duration" class="text-input">
+                    <option value="5">5</option><option value="10">10</option>
+                    <option value="15">15</option><option value="20">20</option>
+                    <option value="25">25</option><option value="30">30</option>
+                </select>
+            </div>
+            <div class="setting-row">
+                <span>Max Players:</span>
+                <input type="number" id="pvp-max-players" class="text-input" value="10" min="2" max="10" style="width: 60px;">
+            </div>
+            <button id="start-create-btn" class="orange-btn">Create Room</button>
+        </div>
+    </div>
+
+    <!-- Join Room Modal -->
+    <div id="join-modal" class="modal-overlay">
+        <div class="modal">
+            <button class="close-modal">X</button>
+            <h2>Join PvP Room</h2>
+            <input type="text" id="room-code-input" placeholder="Enter Room Code" class="text-input">
+            <button id="submit-join-btn" class="green-btn">Join Game</button>
+            <p id="join-error" style="color: red; margin-top: 10px;"></p>
+        </div>
+    </div>
+
+    <!-- Lobby / Waiting Area Modal -->
+    <div id="lobby-modal" class="modal-overlay">
+        <div class="modal">
+            <button class="close-modal" id="leave-lobby-btn">X</button>
+            <h2>Room Lobby</h2>
+            <p>Share this code with friends:</p>
+            <div class="copy-box">
+                <span id="room-code-display">----</span>
+                <button id="copy-code-btn" class="blue-btn small-btn">Copy</button>
+            </div>
+            <p id="lobby-status" style="margin-top:20px; font-weight:bold; color:#ffeb3b;">Waiting for other players...</p>
+            <p>Players: <span id="lobby-count">1</span> / <span id="lobby-max">10</span></p>
+        </div>
+    </div>
+
+    <!-- App Settings Modal -->
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal large-modal">
+            <button class="close-modal">X</button>
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="gameplay-tab">Gameplay</button>
+                <button class="tab-btn" data-tab="controls-tab">Controls</button>
+                <button class="tab-btn" data-tab="account-tab">Account</button>
+            </div>
+            
+            <div class="tab-content active" id="gameplay-tab">
+                <h3>Gameplay Settings</h3>
+                <div class="setting-row"><span>Volume</span><input type="range" min="0" max="100" value="50"></div>
+            </div>
+
+            <div class="tab-content" id="controls-tab">
+                <h3>Controls</h3>
+                <div class="control-diagram">
+                    <p>W, A, S, D - Move</p>
+                    <p>Spacebar - Fire</p>
+                </div>
+            </div>
+
+            <div class="tab-content" id="account-tab">
+                <h3>Account Management</h3>
+                <div id="login-section">
+                    <input type="text" id="auth-username" placeholder="Username" class="text-input">
+                    <input type="password" id="auth-password" placeholder="Password" class="text-input">
+                    <div style="display:flex; gap:10px; margin-top:10px;">
+                        <button id="auth-login-btn" class="blue-btn">Log In</button>
+                        <button id="auth-signup-btn" class="green-btn">Sign Up</button>
+                    </div>
+                    <p id="auth-error" style="color:red; margin-top:10px;"></p>
+                </div>
+                <div id="logged-in-section" style="display:none;">
+                    <p>Signed in as: <strong id="account-username"></strong></p>
+                    <button id="auth-logout-btn" class="orange-btn" style="margin-top:20px;">Log Out</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- In-Game Pause / Exit Menu -->
+    <div id="ingame-menu" class="modal-overlay">
+        <div class="modal">
+            <h2>Game Menu</h2>
+            <button id="resume-btn" class="blue-btn" style="width:100%; margin-bottom:10px;">Resume</button>
+            <button id="exit-game-btn" class="orange-btn" style="width:100%;">Exit to Main Menu</button>
+        </div>
+    </div>
+
+    <!-- Match End / Leaderboard Screen -->
+    <div id="match-end-screen" class="screen">
+        <div class="panel-box text-center" style="width: 400px;">
+            <h1 id="end-title" style="color: #ffeb3b; font-size: 3rem;">MATCH FINISHED</h1>
+            <h2 id="mvp-display" style="color: #4caf50;">MVP: ???</h2>
+            <div id="leaderboard-list" style="text-align: left; background: rgba(0,0,0,0.5); padding: 10px; color: white; border-radius: 8px; margin: 15px 0;">
+                <!-- Ranks injected here -->
+            </div>
+            <button id="return-menu-end-btn" class="blue-btn">Return to Menu</button>
+        </div>
+    </div>
+
+    <!-- Game HUD and Canvas -->
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="hud" class="screen">
+        <!-- Live Scoreboard -->
+        <div id="live-scoreboard" class="scoreboard">
+            <h4>Live Scores</h4>
+            <ul id="score-list"></ul>
+        </div>
+
+        <!-- Top HUD -->
+        <div class="hud-top">
+            <div class="health-container">
+                <div class="health-bar-bg"><div id="health-bar-fill"></div></div>
+                <div id="lives-display">Lives: 3</div>
+            </div>
+            <div id="timer-display" style="font-size: 2rem; font-family: 'Fredoka One'; color: #ffeb3b; text-shadow: 2px 2px 0 #000;">10:00</div>
+            <button id="hud-ingame-settings-btn" class="icon-btn">⚙️</button>
+        </div>
+
+        <div class="hud-bottom" style="display:none;">
+            <!-- Keeping it clean -->
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>

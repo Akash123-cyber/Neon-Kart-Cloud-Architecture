@@ -10,6 +10,14 @@ const client = require('prom-client');
 const collectDefaultMetrics = client.collectDefaultMetrics;
 collectDefaultMetrics();
 
+// HTTP Request Duration Histogram
+const httpRequestDuration = new client.Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['method', 'route', 'status_code'],
+  buckets: [0.1, 0.3, 0.5, 1, 1.5, 2, 5]
+});
+
 const activePlayers = new client.Gauge({
   name: 'neon_kart_active_players',
   help: 'Number of currently connected players'
@@ -22,6 +30,21 @@ app.get('/metrics', async (req, res) => {
 
 app.use(express.static(__dirname));
 app.use(express.json());
+
+// Prometheus HTTP Metrics Middleware
+app.use((req, res, next) => {
+  const end = httpRequestDuration.startTimer();
+
+  res.on('finish', () => {
+    end({
+      method: req.method,
+      route: req.route ? req.route.path : req.path,
+      status_code: res.statusCode
+    });
+  });
+
+  next();
+});
 
 // Auth Routes powered by Redis
 const bcrypt = require('bcryptjs');

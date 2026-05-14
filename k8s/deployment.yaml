@@ -6,19 +6,56 @@ metadata:
     app: neon-kart
 spec:
   replicas: 2
+
   selector:
     matchLabels:
       app: neon-kart
+
   template:
     metadata:
       labels:
         app: neon-kart
+
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "8000"
+
     spec:
       containers:
-      - name: neon-kart
-        image: malikakash/neon-kart:latest
-        env:
-        - name: REDIS_URL
-          value: "redis://redis-service:6379"
-        ports:
-        - containerPort: 8000
+        - name: neon-kart
+
+          image: malikakash/neon-kart:latest
+
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 8000
+              name: http
+
+          env:
+            - name: NODE_ENV
+              value: "production"
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
+
+            limits:
+              memory: "256Mi"
+              cpu: "500m"

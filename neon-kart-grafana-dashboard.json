@@ -51,7 +51,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "neon_kart_active_players",
+          "expr": "sum(neon_kart_active_players)",
           "legendFormat": "Active Players",
           "refId": "A"
         }
@@ -75,7 +75,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "neon_kart_active_players",
+          "expr": "sum(neon_kart_active_players)",
           "legendFormat": "Connected Players",
           "refId": "A"
         }
@@ -97,8 +97,8 @@
               { "color": "red", "value": 80 }
             ]
           },
-          "unit": "percentunit",
-          "max": 1,
+          "unit": "percent",
+          "max": 100,
           "min": 0
         }
       },
@@ -108,7 +108,7 @@
       "targets": [
         {
           "datasource": { "type": "prometheus", "uid": "prometheus" },
-          "expr": "neon_kart_active_players / 20",
+          "expr": "(sum(neon_kart_active_players) / 20) * 100",
           "legendFormat": "Server Load",
           "refId": "A"
         }
@@ -182,8 +182,8 @@
       "options": { "legend": { "calcs": ["mean"], "displayMode": "list", "placement": "bottom", "showLegend": true }, "tooltip": { "mode": "multi" } },
       "targets": [
         {
-          "expr": "rate(http_request_duration_seconds_count{job=~\".*neon-kart.*\"}[1m])",
-          "legendFormat": "HTTP req/s - {{pod}}",
+          "expr": "sum(rate(http_request_duration_seconds_count{job=~\".*neon-kart.*\"}[1m]))",
+          "legendFormat": "HTTP req/s",
           "refId": "A"
         }
       ],
@@ -199,13 +199,13 @@
       "options": { "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "right", "showLegend": true } },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=~\".*neon-kart.*\"}[5m]))",
-          "legendFormat": "p95 latency - {{pod}}",
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=~\".*neon-kart.*\"}[5m])) by (le))",
+          "legendFormat": "p95 latency",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.50, rate(http_request_duration_seconds_bucket{job=~\".*neon-kart.*\"}[5m]))",
-          "legendFormat": "p50 latency - {{pod}}",
+          "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{job=~\".*neon-kart.*\"}[5m])) by (le))",
+          "legendFormat": "p50 latency",
           "refId": "B"
         }
       ],
@@ -221,12 +221,12 @@
       "options": { "legend": { "calcs": ["mean"], "displayMode": "list", "placement": "bottom", "showLegend": true } },
       "targets": [
         {
-          "expr": "nodejs_active_handles_total{job=~\".*neon-kart.*\"}",
+          "expr": "nodejs_active_handles{job=~\".*neon-kart.*\"}",
           "legendFormat": "Active Handles - {{pod}}",
           "refId": "A"
         },
         {
-          "expr": "nodejs_active_requests_total{job=~\".*neon-kart.*\"}",
+          "expr": "nodejs_active_requests{job=~\".*neon-kart.*\"}",
           "legendFormat": "Active Requests - {{pod}}",
           "refId": "B"
         }

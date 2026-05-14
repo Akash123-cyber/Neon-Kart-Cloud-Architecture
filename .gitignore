@@ -29,6 +29,7 @@ terraform/
 
 # #Jenkinsfile
 # Jenkinsfile
+k3s.yaml
 
 
 

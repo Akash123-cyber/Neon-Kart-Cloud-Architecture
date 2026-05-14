@@ -32,8 +32,8 @@ k8s/
 #ClaudeCreatedIT
 ClaudeCreatedIT/
 
-prometheus-servicemonitor.yaml
-
 neon-kart-grafana-dashboard.json
 
 jenkinsfile
+
+k3s.yaml

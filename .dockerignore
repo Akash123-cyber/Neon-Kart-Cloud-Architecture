@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Git
+.git
+.gitignore
+
+# Database
+users.db
+
+# Documentation / Notes
+*.md
+synopsis/
+UI examples/
+
+# Internal folders
+.agents/
+
+# Docker files
+Dockerfile
+.dockerignore
+
+# Logs
+npm-debug.log
+
+# terraform
+terraform/
+
+#kubernetes
+k8s/
+
+#ClaudeCreatedIT
+ClaudeCreatedIT/
+
+prometheus-servicemonitor.yaml
+
+neon-kart-grafana-dashboard.json
+
+jenkinsfile

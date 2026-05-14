@@ -1,0 +1,33 @@
+## k8s/prometheus-servicemonitor.yaml
+##
+## This tells the kube-prometheus-stack's Prometheus Operator WHERE to
+## scrape metrics from. Without this, Prometheus only sees Kubernetes
+## system metrics (CPU, memory, etc.) but NOT your custom Node.js
+## metrics like neon_kart_active_players.
+##
+## HOW IT WORKS:
+##   1. Prometheus Operator watches the cluster for ServiceMonitor objects.
+##   2. It reads the selector below and finds the neon-kart-service.
+##   3. It auto-generates a scrape job pointing at <pod-ip>:8000/metrics.
+##   4. The custom gauge (neon_kart_active_players) becomes queryable in
+##      Prometheus and visualisable in Grafana.
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: neon-kart-monitor
+  namespace: monitoring           # Must be in the same namespace as Prometheus
+  labels:
+    release: monitoring           # Must match the Helm release name used in main.tf
+spec:
+  namespaceSelector:
+    matchNames:
+      - default                   # The namespace where neon-kart-service lives
+  selector:
+    matchLabels:
+      app: neon-kart              # Must match the label on service.yaml
+  endpoints:
+    - port: http                  # Named port — we'll add this name to service.yaml below
+      path: /metrics
+      interval: 15s               # Scrape every 15 seconds
+      scrapeTimeout: 10s

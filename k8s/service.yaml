@@ -1,0 +1,20 @@
+## k8s/service.yaml
+##
+## CHANGE from original: the port now has name: http
+## The Prometheus ServiceMonitor references ports by NAME, not number.
+## Without this name, the ServiceMonitor cannot find the /metrics endpoint.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: neon-kart-service
+  labels:
+    app: neon-kart                # ServiceMonitor selector matches this label
+spec:
+  selector:
+    app: neon-kart
+  type: LoadBalancer
+  ports:
+    - name: http                  # <-- Added: required by prometheus-servicemonitor.yaml
+      port: 80
+      targetPort: 8000

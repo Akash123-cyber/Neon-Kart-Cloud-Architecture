@@ -9,9 +9,26 @@ UI examples/
 synopsis/
 
 # Specific Markdown files
+*.md
 Implementation.md
 scenarios.md
 strategy.md
 report.md
 technical_architecture.md
 .agents
+
+#Docker files
+# .dockerignore
+# Dockerfile
+
+#terraform
+terraform/
+
+#kubernetes
+# k8s/
+
+# #Jenkinsfile
+# Jenkinsfile
+
+
+

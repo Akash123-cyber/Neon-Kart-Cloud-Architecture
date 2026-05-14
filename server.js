@@ -23,76 +23,96 @@ app.get('/metrics', async (req, res) => {
 app.use(express.static(__dirname));
 app.use(express.json());
 
-// Database setup
-const sqlite3 = require('sqlite3').verbose();
+// Auth Routes powered by Redis
 const bcrypt = require('bcryptjs');
 
-const db = new sqlite3.Database('./users.db', (err) => {
-    if (err) console.error(err.message);
-});
-
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        wins INTEGER DEFAULT 0,
-        matches_played INTEGER DEFAULT 0,
-        high_score INTEGER DEFAULT 0
-    )`);
-});
-
-// Auth Routes
-app.post('/api/signup', (req, res) => {
+app.post('/api/signup', async (req, res) => {
     const { username, password } = req.body;
     if(!username || !password) return res.status(400).json({error: 'Username and password required'});
-    bcrypt.hash(password, 10, (err, hash) => {
+    
+    const exists = await gamePub.exists(`user:${username}`);
+    if(exists) return res.status(400).json({error: 'Username already exists'});
+
+    bcrypt.hash(password, 10, async (err, hash) => {
         if(err) return res.status(500).json({error: 'Server error'});
-        db.run('INSERT INTO users (username, password_hash) VALUES (?, ?)', [username, hash], function(err) {
-            if(err) return res.status(400).json({error: 'Username already exists'});
-            res.json({ success: true, wins: 0, matches_played: 0, high_score: 0 });
-        });
+        await gamePub.hSet(`user:${username}`, { password_hash: hash, wins: 0, matches_played: 0, high_score: 0 });
+        res.json({ success: true, wins: 0, matches_played: 0, high_score: 0 });
     });
 });
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
-    db.get('SELECT * FROM users WHERE username = ?', [username], (err, row) => {
-        if(err || !row) return res.status(400).json({error: 'Invalid credentials'});
-        bcrypt.compare(password, row.password_hash, (err, result) => {
-            if(result) res.json({ success: true, wins: row.wins, matches_played: row.matches_played, high_score: row.high_score });
-            else res.status(400).json({error: 'Invalid credentials'});
-        });
+    const user = await gamePub.hGetAll(`user:${username}`);
+    
+    if(!user || !user.password_hash) return res.status(400).json({error: 'Invalid credentials'});
+    
+    bcrypt.compare(password, user.password_hash, (err, result) => {
+        if(result) res.json({ success: true, wins: parseInt(user.wins), matches_played: parseInt(user.matches_played), high_score: parseInt(user.high_score) });
+        else res.status(400).json({error: 'Invalid credentials'});
     });
 });
 
-app.post('/api/match_end', (req, res) => {
+app.post('/api/match_end', async (req, res) => {
     const { username, isWin } = req.body;
     if(!username) return res.json({ success: false });
+    
     const winIncr = isWin ? 1 : 0;
-    db.run('UPDATE users SET matches_played = matches_played + 1, wins = wins + ? WHERE username = ?', [winIncr, username], (err) => {
-        res.json({ success: true });
-    });
+    await gamePub.hIncrBy(`user:${username}`, 'matches_played', 1);
+    await gamePub.hIncrBy(`user:${username}`, 'wins', winIncr);
+    res.json({ success: true });
 });
 
-app.post('/api/score', (req, res) => {
+app.post('/api/score', async (req, res) => {
     const { username, score } = req.body;
     if(!username) return res.json({ success: false });
-    db.get('SELECT high_score FROM users WHERE username = ?', [username], (err, row) => {
-        if(err || !row) return res.json({ success: false });
-        if(score > row.high_score) {
-            db.run('UPDATE users SET high_score = ? WHERE username = ?', [score, username], () => {
-                res.json({ success: true, newHighScore: score });
-            });
-        } else {
-            res.json({ success: true, newHighScore: row.high_score });
-        }
-    });
+    
+    const currentHigh = await gamePub.hGet(`user:${username}`, 'high_score');
+    if(!currentHigh || score > parseInt(currentHigh)) {
+        await gamePub.hSet(`user:${username}`, 'high_score', score);
+        res.json({ success: true, newHighScore: score });
+    } else {
+        res.json({ success: true, newHighScore: parseInt(currentHigh) });
+    }
 });
 
-// Rooms State
-const rooms = {};
+// ----------------------------------------------------
+// REDIS PUB/SUB & ROOM OWNERSHIP ARCHITECTURE
+// ----------------------------------------------------
+const { createClient } = require('redis');
+const { createAdapter } = require('@socket.io/redis-adapter');
+
+const POD_ID = Math.random().toString(36).substring(2, 9);
+const REDIS_URL = process.env.REDIS_URL || 'redis://redis-service:6379';
+
+const redisConfig = { url: REDIS_URL, socket: { connectTimeout: 3000 } };
+const pubClient = createClient(redisConfig);
+const subClient = pubClient.duplicate();
+const gamePub = pubClient.duplicate();
+const gameSub = pubClient.duplicate();
+
+let redisReady = false;
+
+// We will force redisReady = true after 4 seconds regardless, to prevent infinite hanging
+setTimeout(() => { if(!redisReady) { console.log('Redis timeout hit. Booting in local mode.'); redisReady = true; } }, 4000);
+
+Promise.all([
+    pubClient.connect(), subClient.connect(),
+    gamePub.connect(), gameSub.connect()
+]).then(() => {
+    io.adapter(createAdapter(pubClient, subClient));
+    gameSub.subscribe('game-events', (message) => {
+        const msg = JSON.parse(message);
+        handleGameEvent(msg);
+    });
+    redisReady = true;
+    console.log(`Pod ${POD_ID} successfully connected to Redis.`);
+}).catch(err => {
+    console.log(`Pod ${POD_ID} failed to connect to Redis. Running in local fallback mode.`);
+    redisReady = true; // Still allow game to run if Redis is missing (useful for local dev)
+});
+
+// localRooms replaces the global rooms dictionary. It ONLY holds rooms owned by this Pod.
+const localRooms = {};
 const colors = ['#007bff', '#dc3545', '#ffc107', '#28a745', '#17a2b8', '#6f42c1'];
 
 function generateRoomId() { return Math.random().toString(36).substring(2, 8).toUpperCase(); }
@@ -106,130 +126,202 @@ function createPlayerState(id, username) {
     };
 }
 
-io.on('connection', (socket) => {
-    activePlayers.inc();
-    socket.roomId = null;
+// ----------------------------------------------------
+// DISTRIBUTED EVENT ROUTER
+// ----------------------------------------------------
+function handleGameEvent(msg) {
+    const { type, roomId, socketId, data } = msg;
+    const room = localRooms[roomId];
+    
+    // If this Pod does not own the room, it ignores the event completely.
+    if (!room) return; 
 
-    socket.on('createRoom', ({ username, theme, duration, maxPlayers }) => {
-        const roomId = generateRoomId();
-        rooms[roomId] = {
-            settings: { theme, duration: parseInt(duration), maxPlayers: parseInt(maxPlayers) },
-            state: 'WAITING', players: {}, startTime: null
-        };
-        socket.join(roomId);
-        socket.roomId = roomId;
-        rooms[roomId].players[socket.id] = createPlayerState(socket.id, username);
-        socket.emit('roomCreated', roomId);
-        io.to(roomId).emit('lobbyUpdate', { count: 1, max: rooms[roomId].settings.maxPlayers });
-    });
-
-    socket.on('joinRoom', (data) => {
-        const { roomId, username } = data;
-        const room = rooms[roomId];
-        if(!room) { socket.emit('roomError', 'Room not found.'); return; }
-        if(Object.keys(room.players).length >= room.settings.maxPlayers) { socket.emit('roomError', 'Room is full.'); return; }
-        
-        socket.join(roomId);
-        socket.roomId = roomId;
-        room.players[socket.id] = createPlayerState(socket.id, username);
-        
+    if (type === 'playerJoined') {
+        room.players[socketId] = createPlayerState(socketId, data.username);
         const count = Object.keys(room.players).length;
-        io.to(roomId).emit('lobbyUpdate', { count: count, max: room.settings.maxPlayers });
         
-        // If state is playing, drop them in. If waiting and count >= 2, start game.
-        if (room.state === 'WAITING' && count >= 2) {
+        // Update the global Redis metadata
+        gamePub.set(`room:${roomId}`, JSON.stringify({ ...room.settings, count, owner: POD_ID }));
+        io.to(roomId).emit('lobbyUpdate', { count, max: room.settings.maxPlayers });
+        
+        if (room.state === 'WAITING' && count >= room.settings.maxPlayers) {
             room.state = 'PLAYING';
             room.startTime = Date.now();
             io.to(roomId).emit('gameStarted', {
-                theme: room.settings.theme,
-                timeRemaining: room.settings.duration * 60,
-                players: room.players
+                theme: room.settings.theme, timeRemaining: room.settings.duration * 60, players: room.players
             });
-        } else if (room.state === 'PLAYING') {
-            const timeElapsed = Math.floor((Date.now() - room.startTime)/1000);
-            const timeRemaining = (room.settings.duration * 60) - timeElapsed;
-            socket.emit('gameStarted', { theme: room.settings.theme, timeRemaining, players: room.players });
-        } else {
-            socket.emit('roomJoined', roomId);
         }
-    });
-
-    socket.on('disconnect', () => {
-        activePlayers.dec();
-        if(socket.roomId && rooms[socket.roomId]) {
-            const r = rooms[socket.roomId];
-            delete r.players[socket.id];
-            
-            if(Object.keys(r.players).length === 0) {
-                delete rooms[socket.roomId];
-            } else {
-                io.to(socket.roomId).emit('lobbyUpdate', { count: Object.keys(r.players).length, max: r.settings.maxPlayers });
-            }
+    }
+    else if (type === 'playerUpdate') {
+        if(room.players[socketId] && room.players[socketId].isAlive) {
+            room.players[socketId].x = data.x;
+            room.players[socketId].y = data.y;
+            room.players[socketId].angle = data.angle;
         }
-    });
-
-    socket.on('playerUpdate', (data) => {
-        if(socket.roomId && rooms[socket.roomId] && rooms[socket.roomId].players[socket.id]) {
-            let p = rooms[socket.roomId].players[socket.id];
-            if(p.isAlive) { p.x = data.x; p.y = data.y; p.angle = data.angle; }
-        }
-    });
-
-    socket.on('shoot', (data) => {
-        if(socket.roomId && rooms[socket.roomId] && rooms[socket.roomId].players[socket.id]) {
-            socket.to(socket.roomId).emit('projectileSpawned', {
+    }
+    else if (type === 'shoot') {
+        if(room.players[socketId]) {
+            io.to(roomId).emit('projectileSpawned', {
                 x: data.x, y: data.y, angle: data.angle, speed: data.speed,
-                color: rooms[socket.roomId].players[socket.id].color,
-                ownerId: socket.id, damage: data.damage, radius: data.radius
+                color: room.players[socketId].color, ownerId: socketId, damage: data.damage, radius: data.radius
             });
         }
-    });
-
-    socket.on('hitOpponent', (data) => {
-        if(!socket.roomId || !rooms[socket.roomId]) return;
-        const r = rooms[socket.roomId];
-        const victim = r.players[data.victimId];
+    }
+    else if (type === 'hitOpponent') {
+        const victim = room.players[data.victimId];
         if(!victim || !victim.isAlive) return;
 
         victim.health -= data.damage;
         if (victim.health <= 0) {
             victim.lives--;
-            if(r.players[socket.id]) {
-                r.players[socket.id].score++;
-            }
+            if(room.players[socketId]) room.players[socketId].score++;
+            
             if (victim.lives > 0) {
                 victim.health = victim.maxHealth;
                 victim.x = Math.random() * 2800 + 100;
                 victim.y = Math.random() * 2800 + 100;
-                io.to(socket.roomId).emit('playerRespawned', victim.id);
+                io.to(roomId).emit('playerRespawned', victim.id);
             } else {
                 victim.isAlive = false;
-                
-                const alive = Object.values(r.players).filter(p => p.isAlive);
-                const leaderboard = Object.values(r.players)
+                const alive = Object.values(room.players).filter(p => p.isAlive);
+                const leaderboard = Object.values(room.players)
                     .map(p => ({ username: p.username, score: p.score, id: p.id, isAlive: p.isAlive }))
                     .sort((a,b) => b.score - a.score);
 
                 io.to(victim.id).emit('playerEliminated', leaderboard);
                 
-                if (alive.length === 1 && r.state === 'PLAYING') {
-                    r.state = 'FINISHED';
+                if (alive.length === 1 && room.state === 'PLAYING') {
+                    room.state = 'FINISHED';
                     io.to(alive[0].id).emit('matchWon', leaderboard);
-                    // End match for everyone else still spectating
-                    setTimeout(() => {
-                        io.to(socket.roomId).emit('matchEnded', leaderboard);
-                    }, 500);
+                    setTimeout(() => { io.to(roomId).emit('matchEnded', leaderboard); }, 500);
                 }
             }
+        }
+    }
+    else if (type === 'playerDisconnected') {
+        delete room.players[socketId];
+        const count = Object.keys(room.players).length;
+        if(count === 0) {
+            // Room is empty, garbage collect it
+            delete localRooms[roomId];
+            gamePub.del(`room:${roomId}`);
+        } else {
+            gamePub.set(`room:${roomId}`, JSON.stringify({ ...room.settings, count, owner: POD_ID }));
+            io.to(roomId).emit('lobbyUpdate', { count, max: room.settings.maxPlayers });
+        }
+    }
+}
+
+// ----------------------------------------------------
+// SOCKET.IO ENDPOINTS (Proxies)
+// ----------------------------------------------------
+io.on('connection', (socket) => {
+    if(!redisReady) {
+        socket.emit('roomError', 'Server booting up, please try again in a few seconds.');
+        return socket.disconnect();
+    }
+    
+    activePlayers.inc();
+    socket.roomId = null;
+
+    socket.on('createRoom', ({ username, theme, duration, maxPlayers }) => {
+        const roomId = generateRoomId();
+        
+        // This pod claims MASTER OWNERSHIP
+        localRooms[roomId] = {
+            settings: { theme, duration: parseInt(duration), maxPlayers: parseInt(maxPlayers), count: 1 },
+            state: 'WAITING', players: {}, startTime: null
+        };
+        localRooms[roomId].players[socket.id] = createPlayerState(socket.id, username);
+        
+        socket.join(roomId);
+        socket.roomId = roomId;
+
+        // Register room globally in Redis so other Pods know it exists
+        if(gamePub.isOpen) {
+            gamePub.set(`room:${roomId}`, JSON.stringify({ owner: POD_ID, maxPlayers: parseInt(maxPlayers), count: 1, theme }));
+        }
+
+        socket.emit('roomCreated', roomId);
+        io.to(roomId).emit('lobbyUpdate', { count: 1, max: parseInt(maxPlayers) });
+    });
+
+    socket.on('joinRoom', async (data) => {
+        const { roomId, username } = data;
+        
+        // 1. Ask Redis if the room exists globally
+        if(gamePub.isOpen) {
+            const roomMetaStr = await gamePub.get(`room:${roomId}`);
+            if(!roomMetaStr) return socket.emit('roomError', 'Room not found.');
+            
+            const roomMeta = JSON.parse(roomMetaStr);
+            if(roomMeta.count >= roomMeta.maxPlayers) return socket.emit('roomError', 'Room is full.');
+            
+            socket.join(roomId);
+            socket.roomId = roomId;
+            
+            // 2. Tell the Master Owner Pod that a player joined
+            // We add a 250ms delay to prevent a Redis Pub/Sub race condition
+            // This gives the socket.io redis-adapter enough time to officially subscribe to the roomId channel
+            setTimeout(() => {
+                if(gamePub.isOpen) {
+                    gamePub.publish('game-events', JSON.stringify({
+                        type: 'playerJoined', roomId, socketId: socket.id, data: { username }
+                    }));
+                }
+            }, 250);
+        } else {
+            // Local fallback if Redis fails
+            if(!localRooms[roomId]) return socket.emit('roomError', 'Room not found.');
+            socket.join(roomId);
+            socket.roomId = roomId;
+            handleGameEvent({ type: 'playerJoined', roomId, socketId: socket.id, data: { username } });
+        }
+    });
+
+    socket.on('disconnect', () => {
+        activePlayers.dec();
+        if(socket.roomId) {
+            if(gamePub.isOpen) {
+                gamePub.publish('game-events', JSON.stringify({
+                    type: 'playerDisconnected', roomId: socket.roomId, socketId: socket.id
+                }));
+            } else {
+                handleGameEvent({ type: 'playerDisconnected', roomId: socket.roomId, socketId: socket.id });
+            }
+        }
+    });
+
+    // Proxy physical movements to the Master Owner Pod via Redis
+    socket.on('playerUpdate', (data) => {
+        if(socket.roomId) {
+            if(gamePub.isOpen) gamePub.publish('game-events', JSON.stringify({ type: 'playerUpdate', roomId: socket.roomId, socketId: socket.id, data }));
+            else handleGameEvent({ type: 'playerUpdate', roomId: socket.roomId, socketId: socket.id, data });
+        }
+    });
+
+    socket.on('shoot', (data) => {
+        if(socket.roomId) {
+            if(gamePub.isOpen) gamePub.publish('game-events', JSON.stringify({ type: 'shoot', roomId: socket.roomId, socketId: socket.id, data }));
+            else handleGameEvent({ type: 'shoot', roomId: socket.roomId, socketId: socket.id, data });
+        }
+    });
+
+    socket.on('hitOpponent', (data) => {
+        if(socket.roomId) {
+            if(gamePub.isOpen) gamePub.publish('game-events', JSON.stringify({ type: 'hitOpponent', roomId: socket.roomId, socketId: socket.id, data }));
+            else handleGameEvent({ type: 'hitOpponent', roomId: socket.roomId, socketId: socket.id, data });
         }
     });
 });
 
-// Broadcast game state and Handle Timers
+// ----------------------------------------------------
+// THE GAME LOOP (Only runs for rooms OWNED by this pod)
+// ----------------------------------------------------
 setInterval(() => {
     const now = Date.now();
-    for(const roomId in rooms) {
-        const room = rooms[roomId];
+    for(const roomId in localRooms) {
+        const room = localRooms[roomId];
         if(room.state === 'PLAYING') {
             io.to(roomId).emit('stateUpdate', room.players);
             
@@ -238,14 +330,17 @@ setInterval(() => {
             
             if (timeRemaining <= 0) {
                 room.state = 'FINISHED';
-                // Build Leaderboard
                 const leaderboard = Object.values(room.players)
                     .map(p => ({ username: p.username, score: p.score }))
                     .sort((a,b) => b.score - a.score);
                 io.to(roomId).emit('matchEnded', leaderboard);
+                
+                // Cleanup
+                if(gamePub.isOpen) gamePub.del(`room:${roomId}`);
+                delete localRooms[roomId];
             }
         }
     }
 }, 1000 / 30);
 
-server.listen(8000, () => { console.log('Server running on 8000'); });
+server.listen(8000, () => { console.log(`Pod ${POD_ID} running on 8000`); });

@@ -233,18 +233,25 @@ class NPC {
 }
 function spawnNPC() { npcs.push(new NPC()); }
 
+let listenersAttached = false;
+
 // START PVP
-document.getElementById('start-create-btn').addEventListener('click', () => {
+document.getElementById('start-create-btn').addEventListener('click', (e) => {
+    e.target.disabled = true; setTimeout(() => e.target.disabled = false, 2000);
     createModal.classList.remove('active');
-    if(!socket) socket = io();
+    if(!socket || !socket.connected) socket = io({ transports: ['websocket'] });
     socket.emit('createRoom', {
         username, theme: document.getElementById('pvp-theme').value,
         duration: document.getElementById('pvp-duration').value,
         maxPlayers: document.getElementById('pvp-max-players').value
     });
     lobbyModal.classList.add('active');
+    
+    // Clean up old listener before adding a new one to prevent duplication
+    socket.off('roomCreated');
     socket.on('roomCreated', (code) => document.getElementById('room-code-display').innerText = code);
-    setupSocketListeners();
+    
+    if(!listenersAttached) setupSocketListeners();
 });
 
 document.getElementById('copy-code-btn').addEventListener('click', () => {
@@ -263,20 +270,22 @@ document.getElementById('copy-code-btn').addEventListener('click', () => {
     setTimeout(() => { document.getElementById('copy-code-btn').innerText = "Copy"; }, 2000);
 });
 
-document.getElementById('submit-join-btn').addEventListener('click', () => {
+document.getElementById('submit-join-btn').addEventListener('click', (e) => {
     const code = document.getElementById('room-code-input').value.trim().toUpperCase();
     if(code) {
-        if(!socket) socket = io();
+        e.target.disabled = true; setTimeout(() => e.target.disabled = false, 2000);
+        if(!socket || !socket.connected) socket = io({ transports: ['websocket'] });
         socket.emit('joinRoom', { roomId: code, username });
-        setupSocketListeners();
+        if(!listenersAttached) setupSocketListeners();
     }
 });
 
 function setupSocketListeners() {
+    listenersAttached = true;
     socket.on('lobbyUpdate', (data) => {
         document.getElementById('lobby-count').innerText = data.count;
         document.getElementById('lobby-max').innerText = data.max;
-        if(data.count >= 2) document.getElementById('lobby-status').innerText = "Game is starting...";
+        if(data.count >= data.max) document.getElementById('lobby-status').innerText = "Game is starting...";
     });
     socket.on('gameStarted', (data) => {
         lobbyModal.classList.remove('active'); joinModal.classList.remove('active'); mainMenu.classList.remove('active');
@@ -286,7 +295,28 @@ function setupSocketListeners() {
         startGameUI();
     });
     socket.on('stateUpdate', (players) => {
-        otherPlayers = players;
+        if (!otherPlayers) otherPlayers = {};
+        for (let id in players) {
+            if (playerState && id === playerState.id) continue;
+            if (!otherPlayers[id] || otherPlayers[id].targetX === undefined) {
+                otherPlayers[id] = players[id];
+                otherPlayers[id].targetX = players[id].x;
+                otherPlayers[id].targetY = players[id].y;
+                otherPlayers[id].targetAngle = players[id].angle;
+            } else {
+                otherPlayers[id].targetX = players[id].x;
+                otherPlayers[id].targetY = players[id].y;
+                otherPlayers[id].targetAngle = players[id].angle;
+                otherPlayers[id].health = players[id].health;
+                otherPlayers[id].lives = players[id].lives;
+                otherPlayers[id].isAlive = players[id].isAlive;
+                otherPlayers[id].score = players[id].score;
+            }
+        }
+        for (let id in otherPlayers) {
+            if (!players[id] && (!playerState || id !== playerState.id)) delete otherPlayers[id];
+        }
+
         if(playerState && players[playerState.id]) {
             if (players[playerState.id].health < playerState.health) SoundManager.takeDamage();
             playerState.health = players[playerState.id].health;

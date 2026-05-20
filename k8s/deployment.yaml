@@ -36,7 +36,7 @@ spec:
           env:
             - name: NODE_ENV
               value: "production"
-            - name: POD_NAME                # ← ADDED: injects real pod name into server.js
+            - name: POD_NAME                # injects real pod name into server.js
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name  # Kubernetes fills this automatically

@@ -17,18 +17,11 @@ report.md
 technical_architecture.md
 .agents
 
-#Docker files
-# .dockerignore
-# Dockerfile
 
 #terraform
 terraform/
 
-#kubernetes
-# k8s/
 
-# #Jenkinsfile
-# Jenkinsfile
 # k3s.yaml
 #
 

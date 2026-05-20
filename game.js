@@ -299,18 +299,23 @@ function setupSocketListeners() {
         for (let id in players) {
             if (playerState && id === playerState.id) continue;
             if (!otherPlayers[id] || otherPlayers[id].targetX === undefined) {
-                otherPlayers[id] = players[id];
-                otherPlayers[id].targetX = players[id].x;
-                otherPlayers[id].targetY = players[id].y;
+                // First time seeing this player: copy full state and initialise
+                // both the render position (x/y) AND the lerp target to the same
+                // value so the kart appears immediately at the correct location.
+                otherPlayers[id] = { ...players[id] };
+                otherPlayers[id].targetX    = players[id].x;
+                otherPlayers[id].targetY    = players[id].y;
                 otherPlayers[id].targetAngle = players[id].angle;
             } else {
-                otherPlayers[id].targetX = players[id].x;
-                otherPlayers[id].targetY = players[id].y;
+                // Subsequent updates: only move the TARGET — the lerp in
+                // updateState() will smoothly drive x/y toward it each frame.
+                otherPlayers[id].targetX    = players[id].x;
+                otherPlayers[id].targetY    = players[id].y;
                 otherPlayers[id].targetAngle = players[id].angle;
-                otherPlayers[id].health = players[id].health;
-                otherPlayers[id].lives = players[id].lives;
+                otherPlayers[id].health  = players[id].health;
+                otherPlayers[id].lives   = players[id].lives;
                 otherPlayers[id].isAlive = players[id].isAlive;
-                otherPlayers[id].score = players[id].score;
+                otherPlayers[id].score   = players[id].score;
             }
         }
         for (let id in otherPlayers) {
@@ -369,7 +374,33 @@ let lastShot = 0;
 
 function updateState(dt) {
     if(!playerState || !playerState.isAlive) return;
-    
+
+    // ------------------------------------------------------------------
+    // LERP — smoothly interpolate every remote player toward the latest
+    // server-authoritative position received in stateUpdate.
+    // The server ticks at 30 fps; the client renders at 60+ fps.
+    // Without this, remote karts stay frozen at their spawn coordinates.
+    // ------------------------------------------------------------------
+    if (playMode === 'PVP') {
+        // lerpFactor ~0.3 at 60fps (dt≈16ms). Clamp to 1 so we never overshoot.
+        const lerpFactor = Math.min(1, dt / 50);
+        for (let id in otherPlayers) {
+            const op = otherPlayers[id];
+            if (op.targetX === undefined) continue;
+
+            // Position lerp
+            op.x += (op.targetX - op.x) * lerpFactor;
+            op.y += (op.targetY - op.y) * lerpFactor;
+
+            // Angle lerp — always take the shortest arc to avoid 360° spin
+            let angleDiff = op.targetAngle - op.angle;
+            while (angleDiff >  Math.PI) angleDiff -= 2 * Math.PI;
+            while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+            op.angle += angleDiff * lerpFactor;
+        }
+    }
+    // ------------------------------------------------------------------
+
     let vx = 0; let vy = 0;
     if (keys['KeyW'] || keys['ArrowUp']) { vx += Math.cos(playerState.angle) * 10; vy += Math.sin(playerState.angle) * 10; }
     if (keys['KeyS'] || keys['ArrowDown']) { vx -= Math.cos(playerState.angle) * 5; vy -= Math.sin(playerState.angle) * 5; }

@@ -1,10 +1,8 @@
 {
   "__inputs": [],
   "__requires": [],
-  "annotations": {
-    "list": []
-  },
-  "description": "Neon Kart Battle \u2014 Live Game Observability Dashboard",
+  "annotations": { "list": [] },
+  "description": "Neon Kart Battle — Live Game Observability Dashboard",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -14,53 +12,29 @@
   "panels": [
     {
       "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
       "id": 100,
-      "title": "\ud83c\udfae Game Health",
+      "title": "🎮 Game Health",
       "type": "row"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
+          "color": { "mode": "thresholds" },
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 5
-              },
-              {
-                "color": "red",
-                "value": 10
-              }
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 10 }
             ]
           },
           "unit": "short"
         }
       },
-      "gridPos": {
-        "h": 5,
-        "w": 4,
-        "x": 0,
-        "y": 1
-      },
+      "gridPos": { "h": 5, "w": 4, "x": 0, "y": 1 },
       "id": 1,
       "options": {
         "colorMode": "background",
@@ -68,9 +42,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -80,38 +52,25 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "sum(neon_kart_active_players)",
-          "legendFormat": "Total Players",
+          "legendFormat": "Active Players",
           "refId": "A"
         }
       ],
-      "title": "\ud83d\udfe2 Active Players (Live)",
+      "title": "🟢 Active Players (Live)",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
+          "color": { "mode": "palette-classic" },
           "unit": "short"
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 5,
-        "w": 10,
-        "x": 4,
-        "y": 1
-      },
+      "gridPos": { "h": 5, "w": 10, "x": 4, "y": 1 },
       "id": 2,
       "options": {
         "legend": {
@@ -120,59 +79,36 @@
           "placement": "bottom",
           "showLegend": true
         },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "tooltip": { "mode": "multi", "sort": "none" }
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "sum(neon_kart_active_players)",
           "legendFormat": "Total Players",
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "neon_kart_active_players",
           "legendFormat": "Pod: {{pod}}",
           "refId": "B"
         }
       ],
-      "title": "\ud83d\udcc8 Player Count Over Time",
+      "title": "📈 Player Count Over Time",
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
+          "color": { "mode": "thresholds" },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 50
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 80 }
             ]
           },
           "unit": "percent",
@@ -180,71 +116,50 @@
           "min": 0
         }
       },
-      "gridPos": {
-        "h": 5,
-        "w": 5,
-        "x": 14,
-        "y": 1
-      },
+      "gridPos": { "h": 5, "w": 5, "x": 14, "y": 1 },
       "id": 3,
       "options": {
         "minVizHeight": 75,
         "minVizWidth": 75,
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
         },
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "(sum(neon_kart_active_players) / 20) * 100",
           "legendFormat": "Server Load %",
           "refId": "A"
         }
       ],
-      "title": "\u26a1 Server Load (Total Players / Max Capacity)",
+      "title": "⚡ Server Load (Total Players / Max 20)",
       "type": "gauge"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
+          "color": { "mode": "thresholds" },
           "unit": "short",
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
-              }
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
             ]
-          }
+          },
+          "mappings": [
+            { "options": { "0": { "text": "ALL UP" } }, "type": "value" }
+          ]
         }
       },
-      "gridPos": {
-        "h": 5,
-        "w": 5,
-        "x": 19,
-        "y": 1
-      },
+      "gridPos": { "h": 5, "w": 5, "x": 19, "y": 1 },
       "id": 4,
       "options": {
         "colorMode": "background",
@@ -252,195 +167,121 @@
         "justifyMode": "center",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ]
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
         },
         "textMode": "auto"
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "count(up{job=~\".*neon-kart.*\"} == 1) or vector(0)",
-          "legendFormat": "Pods Up",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "count(up{job=~\".*neon-kart.*\"} == 0) or vector(0)",
           "legendFormat": "Pods Down",
-          "refId": "B"
+          "refId": "A"
         }
       ],
-      "title": "\ud83d\udfe2 Pods Up / \ud83d\udd34 Pods Down",
+      "title": "🔴 Pods Down",
       "type": "stat"
     },
     {
       "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 6
-      },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
       "id": 101,
-      "title": "\ud83d\udda5\ufe0f Node.js Process Metrics",
+      "title": "🖥️ Node.js Process Metrics",
       "type": "row"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "unit": "bytes",
-          "color": {
-            "mode": "palette-classic"
-          }
+          "color": { "mode": "palette-classic" }
         }
       },
-      "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 0,
-        "y": 7
-      },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 7 },
       "id": 5,
       "options": {
         "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
+          "calcs": ["mean", "max"],
           "displayMode": "table",
           "placement": "right",
           "showLegend": true
         },
-        "tooltip": {
-          "mode": "multi"
-        }
+        "tooltip": { "mode": "multi" }
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "process_resident_memory_bytes{job=~\".*neon-kart.*\", pod=~\"neon-kart.*\"}",
           "legendFormat": "RSS - {{pod}}",
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "nodejs_heap_size_used_bytes{job=~\".*neon-kart.*\", pod=~\"neon-kart.*\"}",
           "legendFormat": "Heap Used - {{pod}}",
           "refId": "B"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "nodejs_heap_size_total_bytes{job=~\".*neon-kart.*\", pod=~\"neon-kart.*\"}",
           "legendFormat": "Heap Total - {{pod}}",
           "refId": "C"
         }
       ],
-      "title": "\ud83e\udde0 Node.js Memory (per Pod)",
+      "title": "🧠 Node.js Memory (per Pod)",
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
-          "color": {
-            "mode": "palette-classic"
-          }
+          "color": { "mode": "palette-classic" }
         }
       },
-      "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 12,
-        "y": 7
-      },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 7 },
       "id": 6,
       "options": {
         "legend": {
-          "calcs": [
-            "mean"
-          ],
+          "calcs": ["mean"],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
         },
-        "tooltip": {
-          "mode": "multi"
-        }
+        "tooltip": { "mode": "multi" }
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "sum(rate(http_request_duration_seconds_count{job=~\".*neon-kart.*\", pod=~\"neon-kart.*\"}[1m]))",
           "legendFormat": "Total req/s",
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "sum by (pod) (rate(http_request_duration_seconds_count{job=~\".*neon-kart.*\", pod=~\"neon-kart.*\"}[1m]))",
           "legendFormat": "{{pod}}",
           "refId": "B"
         }
       ],
-      "title": "\ud83c\udf10 HTTP Request Rate (req/s)",
+      "title": "🌐 HTTP Request Rate (req/s)",
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "unit": "s",
-          "color": {
-            "mode": "palette-classic"
-          }
+          "color": { "mode": "palette-classic" }
         }
       },
-      "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 0,
-        "y": 14
-      },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 14 },
       "id": 7,
       "options": {
         "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
+          "calcs": ["mean", "max"],
           "displayMode": "table",
           "placement": "right",
           "showLegend": true
@@ -448,52 +289,34 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=~\".*neon-kart.*\", pod=~\"neon-kart.*\"}[5m])))",
           "legendFormat": "p95 latency",
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "histogram_quantile(0.50, sum by (le) (rate(http_request_duration_seconds_bucket{job=~\".*neon-kart.*\", pod=~\"neon-kart.*\"}[5m])))",
           "legendFormat": "p50 latency",
           "refId": "B"
         }
       ],
-      "title": "\u23f1\ufe0f HTTP Response Latency (p95 / p50)",
+      "title": "⏱️ HTTP Response Latency (p95 / p50)",
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "color": {
-            "mode": "palette-classic"
-          }
+          "color": { "mode": "palette-classic" }
         }
       },
-      "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 12,
-        "y": 14
-      },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 14 },
       "id": 8,
       "options": {
         "legend": {
-          "calcs": [
-            "mean"
-          ],
+          "calcs": ["mean"],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -501,67 +324,43 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "nodejs_active_handles{job=~\".*neon-kart.*\", pod=~\"neon-kart.*\"}",
           "legendFormat": "Handles - {{pod}}",
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "nodejs_active_requests{job=~\".*neon-kart.*\", pod=~\"neon-kart.*\"}",
           "legendFormat": "Requests - {{pod}}",
           "refId": "B"
         }
       ],
-      "title": "\ud83d\udd04 Node.js Event Loop Handles & Requests",
+      "title": "🔄 Node.js Event Loop Handles & Requests",
       "type": "timeseries"
     },
     {
       "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 21
-      },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
       "id": 102,
-      "title": "\u2638\ufe0f Kubernetes Pod Health",
+      "title": "☸️ Kubernetes Pod Health",
       "type": "row"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "unit": "percentunit",
-          "color": {
-            "mode": "palette-classic"
-          },
+          "color": { "mode": "palette-classic" },
           "max": 1,
           "min": 0
         }
       },
-      "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 0,
-        "y": 22
-      },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 22 },
       "id": 9,
       "options": {
         "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
+          "calcs": ["mean", "max"],
           "displayMode": "table",
           "placement": "right",
           "showLegend": true
@@ -569,44 +368,28 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"default\", pod=~\"neon-kart.*\", container!=\"\", container!=\"POD\"}[1m]))",
           "legendFormat": "CPU - {{pod}}",
           "refId": "A"
         }
       ],
-      "title": "\ud83d\udcbb Pod CPU Usage",
+      "title": "💻 Pod CPU Usage",
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "fieldConfig": {
         "defaults": {
           "unit": "bytes",
-          "color": {
-            "mode": "palette-classic"
-          }
+          "color": { "mode": "palette-classic" }
         }
       },
-      "gridPos": {
-        "h": 7,
-        "w": 12,
-        "x": 12,
-        "y": 22
-      },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 22 },
       "id": 10,
       "options": {
         "legend": {
-          "calcs": [
-            "mean",
-            "max"
-          ],
+          "calcs": ["mean", "max"],
           "displayMode": "table",
           "placement": "right",
           "showLegend": true
@@ -614,38 +397,25 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"default\", pod=~\"neon-kart.*\", container!=\"\", container!=\"POD\"})",
           "legendFormat": "Memory - {{pod}}",
           "refId": "A"
         }
       ],
-      "title": "\ud83e\uddf1 Pod Memory Usage",
+      "title": "🧱 Pod Memory Usage",
       "type": "timeseries"
     }
   ],
   "refresh": "10s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": [
-    "neon-kart",
-    "game",
-    "nodejs",
-    "kubernetes"
-  ],
-  "templating": {
-    "list": []
-  },
-  "time": {
-    "from": "now-30m",
-    "to": "now"
-  },
+  "tags": ["neon-kart", "game", "nodejs", "kubernetes"],
+  "templating": { "list": [] },
+  "time": { "from": "now-30m", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Neon Kart Battle \u2014 Observability",
+  "title": "Neon Kart Battle — Observability",
   "uid": "neon-kart-dashboard",
-  "version": 3
+  "version": 4
 }

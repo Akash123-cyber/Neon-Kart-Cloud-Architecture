@@ -18,9 +18,14 @@ const httpRequestDuration = new client.Histogram({
   buckets: [0.1, 0.3, 0.5, 1, 1.5, 2, 5]
 });
 
+// POD_NAME is injected by Kubernetes via env (spec.containers[].env fieldRef pod name).
+// Falls back to a random ID for local dev.
+const POD_NAME = process.env.POD_NAME || `local-${Math.random().toString(36).substring(2, 9)}`;
+
 const activePlayers = new client.Gauge({
   name: 'neon_kart_active_players',
-  help: 'Number of currently connected players'
+  help: 'Number of currently connected players',
+  labelNames: ['pod']
 });
 
 app.get('/metrics', async (req, res) => {
@@ -104,7 +109,7 @@ app.post('/api/score', async (req, res) => {
 const { createClient } = require('redis');
 const { createAdapter } = require('@socket.io/redis-adapter');
 
-const POD_ID = Math.random().toString(36).substring(2, 9);
+const POD_ID = POD_NAME;
 const REDIS_URL = process.env.REDIS_URL || 'redis://redis-service:6379';
 
 const redisConfig = { url: REDIS_URL, socket: { connectTimeout: 3000 } };
@@ -244,7 +249,7 @@ io.on('connection', (socket) => {
         return socket.disconnect();
     }
     
-    activePlayers.inc();
+    activePlayers.inc({ pod: POD_NAME });
     socket.roomId = null;
 
     socket.on('createRoom', ({ username, theme, duration, maxPlayers }) => {
@@ -303,7 +308,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
-        activePlayers.dec();
+        activePlayers.dec({ pod: POD_NAME });
         if(socket.roomId) {
             if(gamePub.isOpen) {
                 gamePub.publish('game-events', JSON.stringify({

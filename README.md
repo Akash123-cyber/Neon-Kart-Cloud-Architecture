@@ -14,7 +14,7 @@
   <img src="img/demo/homepage.gif" width="100%" alt="Homepage Preview">
 </p>
 
-Neon Kart Battle is a real-time multiplayer kart racing game with support for both PvP rooms and solo bot matches. It is built on a cost-optimized, self-managed cloud architecture. Instead of using expensive managed services, the entire stack runs on a lightweight **K3s (Kubernetes)** cluster provisioned with **Terraform**, deployed automatically via **Jenkins**, and monitored using **Prometheus & Grafana**.
+Neon Kart Battle is a real-time multiplayer kart game inspired from [smashkarts.io](https://smashkarts.io/), with support for both PvP rooms and solo bot matches. It is built on a cost-optimized, self-managed cloud architecture. Instead of using expensive managed services, the entire stack runs on a lightweight **K3s (Kubernetes)** cluster provisioned with **Terraform**, deployed automatically via **Jenkins**, and monitored using **Prometheus & Grafana**.
 
 ---
 

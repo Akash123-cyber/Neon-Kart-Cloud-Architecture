@@ -11,9 +11,6 @@ synopsis/
 # Project Related Markdown Files
 ProjectRelatedMarkdownFiles/
 
-# Any Markdown File
-*.md
-
 #terraform
 # Local .terraform directories
 **/.terraform/*

@@ -40,7 +40,6 @@ neon-kart-key.pem
 
 # k3s.yaml
 k3s.yaml
-#
 
-
-
+# Plan document
+plan.md

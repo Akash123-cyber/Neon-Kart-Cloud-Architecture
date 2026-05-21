@@ -10,7 +10,11 @@
 [![Observability](https://img.shields.io/badge/metrics-prometheus%20%2F%20grafana-brightgreen.svg)](https://prometheus.io/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
-Neon Kart Battle is a highly concurrent, real-time multiplayer PvP and solo kart battle game. Designed with a **cloud-native, cost-optimized AWS architecture**, it runs a stateless containerized backend on a self-managed, lightweight **K3s (Kubernetes)** cluster, managed with **Terraform**, deployed via **Jenkins**, and monitored through **Prometheus & Grafana**.
+<p align="center">
+  <video src="img/demo/homepage%20.mp4" width="100%" autoplay loop muted playsinline style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);"></video>
+</p>
+
+Neon Kart Battle is a real-time multiplayer kart racing game with support for both PvP rooms and solo bot matches. It is built on a cost-optimized, self-managed cloud architecture. Instead of using expensive managed services, the entire stack runs on a lightweight **K3s (Kubernetes)** cluster provisioned with **Terraform**, deployed automatically via **Jenkins**, and monitored using **Prometheus & Grafana**.
 
 ---
 
@@ -28,19 +32,19 @@ Neon Kart Battle is a highly concurrent, real-time multiplayer PvP and solo kart
 
 ---
 
-## 🚀 Key Architectural Features
+## 🚀 Key Features
 
-- **Cost-Optimized Compute (Saving $73+/mo):** Avoids AWS EKS control-plane charges. The entire Kubernetes orchestration environment (K3s), Jenkins automation engine, and monitoring stack are bootstrapped onto a single, high-performance `c7i-flex.large` EC2 instance using Terraform.
-- **Stateless Redis Pub/Sub Router:** Socket.io connections utilize `@socket.io/redis-adapter` for a distributed event broker model, coordinating game sessions, authentication, and player state across horizontally scaled pods.
-- **AAA Real-Time Networking (30 FPS/60+ FPS):** Minimizes network overhead by processing server physics and broadcasting game states at an efficient **30 FPS**. Client browsers apply **Linear Interpolation (Lerp)** on position and angle vectors to render smooth gameplay at **60/144/240 FPS**.
-- **DevSecOps Compliance:** Jenkins enforces a multi-layer security scan—running `npm audit` on NPM dependencies and `Trivy` filesystem/container vulnerability scanning to fail builds on `CRITICAL` issues.
-- **Exposed Custom Metrics:** The Node.js server incorporates `prom-client` to publish core system performance and game metrics (e.g., active players, event-loop lag, HTTP response duration histograms) on a `/metrics` route scraped by Prometheus.
+- **Low-Cost Kubernetes Setup (Saves $73+/month):** Avoids AWS EKS control plane fees. The entire environment—K3s cluster, Jenkins build engine, and monitoring stack—runs on a single `c7i-flex.large` EC2 instance provisioned by Terraform.
+- **Horizontal Scaling via Redis:** Uses Socket.io's Redis adapter to sync events across pods, allowing game sessions, authentication, and player connections to scale horizontally without losing track of state.
+- **Smooth Gameplay (30Hz Server, 60Hz+ Client):** To save bandwidth, the server runs physics ticks and broadcasts game state at 30 FPS. The browser client applies client-side linear interpolation (lerping) on coordinates and angles, rendering smooth movement even on high-refresh-rate monitors.
+- **Built-in Security Scanning:** The Jenkins pipeline runs security scans using `npm audit` and checks container/file security using `Trivy`, automatically blocking builds if critical security issues are found.
+- **App Telemetry:** The server uses `prom-client` to expose metrics like active players, event-loop lag, and endpoint response times on a `/metrics` route for Prometheus to scrape.
 
 ---
 
 ## 🗺️ Cloud-Native System Architecture
 
-The following diagram illustrates the network topography, container deployment namespaces, data flows, and monitoring scrape paths of the system:
+Here is how the infrastructure, namespaces, data flows, and monitoring paths are set up:
 
 ```mermaid
 graph TD
@@ -131,10 +135,14 @@ graph TD
 ## 🎮 Core Game Mechanics & Netcode
 
 ### Matchmaking & Rooms
-The application avoids global traffic broadcasting by grouping player socket IDs into isolated **Socket.IO Rooms**. 
-1. **Creation:** Lobbies generate a unique 6-character code (e.g. `XJ8K3Q`), binding settings like game duration, theme, and capacity (2-10 players).
-2. **Dynamic Entry:** The lobby displays player count updates and restricts game start until the room is full.
-3. **Master Room Ownership:** When a room is created, the Node.js pod that received the socket request registers itself as the **Master Owner** of that room in Redis. Subsequent player joins query Redis to find the Master Owner pod, proxying all keyboard inputs and collision calculations to that single authoritative node to prevent desynchronization.
+To prevent broadcasting unnecessary events to all players, the game groups active players using **Socket.IO Rooms**.
+1. **Room Creation:** Creating a room generates a 6-character lobby code (e.g., `XJ8K3Q`) and configures custom settings like the map theme and room size (2-10 players).
+2. **Lobby Updates:** The lobby shows real-time player lists and restricts the game from starting until the room is full.
+3. **Authoritative Pod Routing (Master Room Ownership):** When a user creates a room, the specific Node.js pod that handled the request registers itself in Redis as the authoritative host ("Master Owner") for that lobby. Other players who join query Redis to find this owner pod, routing their keystrokes and collision events directly to it to avoid state desync.
+
+<p align="center">
+  <video src="img/demo/PVP.mp4" width="100%" autoplay loop muted playsinline style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);"></video>
+</p>
 
 ### Interpolation (LERP)
 To optimize network bandwidth costs, the server ticks physics and broadcasts player coordinates at **30 FPS**. To ensure smooth rendering on modern high-refresh-rate displays (60Hz to 240Hz+), the client browser calculates the delta time (`dt`) and uses linear interpolation to render intermediate frames:
@@ -154,56 +162,81 @@ op.angle += angleDiff * lerpFactor;
 
 ## 💾 Dual-Tier Session Persistence
 
-To guarantee persistent player statistics without causing database thrashing, a dual-tier storage strategy is implemented:
+To avoid database bottlenecks under load, player stats are split into two storage tiers:
 
-### 1. Registered Users (Stateless Redis Mode)
-Credentials are securely hashed using `bcrypt` and stored within Redis hashes (`user:${username}`). This architecture makes the Node.js server pods entirely **stateless**, removing local filesystem dependencies (like SQLite locks) and allowing replicas to scale horizontally:
-- **Redis Schema (hSet):** `password_hash`, `wins`, `matches_played`, `high_score`.
+### 1. Registered Users (Redis Persistence)
+User credentials are hashed using `bcrypt` and stored in Redis hashes (`user:${username}`). Since the user database is centralized in Redis, the Node.js app servers are stateless, avoiding database lock issues and scaling easily:
+- **Stored Data:** `password_hash`, `wins`, `matches_played`, and `high_score`.
+
+<p align="center">
+  <video src="img/demo/auth.mp4" width="80%" autoplay loop muted playsinline style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);"></video>
+</p>
 
 ### 2. Guest Sessions (Hybrid In-Memory & Local Storage)
-To prevent transient guest accounts from bloating the database:
-- **Active Session (Server RAM):** Dynamic session parameters (`coordinates`, `health`, `live score`) are held in the server's `rooms` RAM, acting as a temporary high-speed database. This state is instantly garbage-collected upon user disconnect.
-- **Persistent Stats (Browser Local Storage):** Long-term totals for `Wins`, `Matches`, and `High Score` are cached using the browser's `localStorage` API, keeping state persistent between sessions.
+To keep the Redis database from bloating with temporary guest data:
+- **Active Sessions (Server RAM):** Temporary gameplay variables (coordinates, health, live scores) live in the server's memory and are deleted as soon as the user disconnects.
+- **Local Stats (Browser Local Storage):** Long-term metrics like total wins and high scores are saved locally using the browser's `localStorage`, letting guest accounts persist their stats between plays without a backend account.
 
 ---
 
-## 🛡️ Continuous Integration & DevSecOps
+## 🛡️ CI/CD & Security Scan Pipeline
 
-The [Jenkinsfile](./Jenkinsfile) automates the code validation, security scanning, build generation, manifest mutation, and deployment cycle:
+The [Jenkinsfile](./Jenkinsfile) automates the full build, security validation, and deployment cycle:
 
+```mermaid
+graph TD
+    Start([Start Build]) --> Checkout["Stage 1: Checkout (Pull from Git)"]
+    Checkout --> Install["Stage 2: Install Dependencies (NPM install)"]
+    
+    subgraph Security_Scans ["Stage 3: Parallel Security Scans"]
+        NpmAudit["npm audit<br/>(NPM Dependency CVEs)"]
+        TrivyScan["Trivy File Scan<br/>(Filesystem Vulnerabilities)"]
+    end
+    
+    Install --> NpmAudit
+    Install --> TrivyScan
+    
+    NpmAudit --> BuildPush["Stage 4: Docker Build & Push (Docker Hub / Trivy)"]
+    TrivyScan --> BuildPush
+    
+    BuildPush --> UpdateManifest["Stage 5: Update K8s Manifest (Surgically update tag)"]
+    UpdateManifest --> DeployK3s["Stage 6: Deploy to Kubernetes (kubectl apply)"]
+    DeployK3s --> VerifyMetrics["Stage 7: Verify Observability (Prometheus & Grafana)"]
+    VerifyMetrics --> End([Rollout Complete])
+
+    style Start fill:#4caf50,stroke:#388e3c,color:#fff
+    style End fill:#2196f3,stroke:#1976d2,color:#fff
 ```
-[Checkout] ──> [Install Deps] ──> [Security Scan] ──> [Docker Build & Push] ──> [Update Manifest] ──> [Deploy K3s] ──> [Verify Observability]
-```
 
-1. **Checkout:** Pulls latest revisions from the GitHub `main` branch.
-2. **Install Dependencies:** Installs packages using native `npm install` on the EC2 host.
-3. **Security Scan (Parallel):**
-   - **npm audit:** Checks NPM packages for security advisories.
-   - **Trivy File Scan:** Installs Trivy locally to inspect the workspace for `CRITICAL` system vulnerabilities.
-4. **Docker Build & Push:** Authenticates against Docker Hub, builds a production image using the Jenkins `BUILD_NUMBER` tag, runs a Trivy container image scan, and pushes the tagged and `:latest` images to Docker Hub.
-5. **Update K8s Manifest:** Modifies `k8s/deployment.yaml` with the unique image tag using `sed`.
-6. **Deploy to Kubernetes:** Imports cluster credentials (`kubeconfig-secret`), applies manifests (`redis.yaml`, `deployment.yaml`, `service.yaml`, `prometheus-servicemonitor.yaml`), and monitors rollout completion.
-7. **Verify Observability:** Queries Prometheus and Grafana health endpoints to confirm the monitoring stack is live and responsive.
+1. **Checkout:** Clones the repository.
+2. **Install Dependencies:** Runs `npm install` on the build machine.
+3. **Parallel Security Scans:**
+   - **npm audit:** Scans dependencies for known NPM security issues.
+   - **Trivy File Scan:** Scans the repository filesystem for vulnerabilities or hardcoded secrets.
+4. **Docker Build & Push:** Builds the Docker container, runs a Trivy image vulnerability scan, and pushes the image tagged with the build number and `:latest` to Docker Hub.
+5. **Update K8s Manifest:** Updates the container image tag in `k8s/deployment.yaml` using a `sed` script.
+6. **Deploy to Kubernetes:** Loads K3s cluster credentials from a secure credential file and deploys the manifests using `kubectl`.
+7. **Verify Observability:** Pings the monitoring endpoints to ensure Prometheus and Grafana are healthy.
 
 ---
 
-## 📊 Observability & Monitoring
+## 📊 Observability & Metrics
 
-The repository integrates a complete logging and telemetry stack using Prometheus operator CRDs:
+We track system performance and in-game statistics using a Prometheus and Grafana setup:
 
-### Metrics Exporter (`prom-client`)
-- **System Metrics:** Tracks standard Node.js runtime parameters (CPU utilization, resident memory size `RSS`, heap total/used size, active handles, active async requests, garbage collection frequency).
-- **Custom Game Metrics:** Implements a custom Prometheus Gauge `neon_kart_active_players` tracking concurrent connections tagged with the host pod name (`pod`).
-- **HTTP Metrics:** Implements a HTTP Request Duration Histogram tracking processing latencies by method and route status codes.
+### Metric Collection (`prom-client`)
+- **Runtime Stats:** Standard Node.js process data (CPU usage, event loop lag, and heap memory usage).
+- **Active Players:** A custom metric (`neon_kart_active_players`) that registers how many players are currently connected to each individual application pod.
+- **HTTP Latency:** A histogram mapping response latencies and status codes across different endpoints.
 
-### Grafana Dashboard Import
-The [neon-kart-grafana-dashboard.json](./neon-kart-grafana-dashboard.json) file configures the following panels:
-- **🟢 Active Players (Live):** Single-value gauge showing aggregate connections.
-- **📈 Player Count Over Time:** Split timeseries tracking total players vs. individual pod allocations.
-- **⚡ Server Load:** Gauge metric scaling active players against maximum capacity (20).
-- **🧠 Node.js Memory:** Heap memory consumption overlay tracked per Pod.
-- **⏱️ HTTP Latency:** Quantiles displaying p50 and p95 request latencies.
-- **💻 Pod Resource Allocation:** Kubernetes container level metrics for CPU and Memory.
+### Grafana Dashboard
+Importing the [neon-kart-grafana-dashboard.json](./neon-kart-grafana-dashboard.json) file sets up a live monitoring dashboard showing:
+- **🟢 Connected Players:** A live gauge showing total concurrent players.
+- **📈 Connections over Time:** A time-series chart showing traffic split between active pods.
+- **⚡ Server Load:** A gauge indicating how close the server is to its maximum concurrent player capacity (20).
+- **🧠 Node.js Memory:** RSS and heap memory usage tracked per pod.
+- **⏱️ HTTP Response Time:** p50, p90, and p95 latencies for server endpoints.
+- **💻 Kubernetes Pod Resources:** CPU and memory usage tracked at the pod container level.
 
 ---
 

@@ -47,59 +47,73 @@ Neon Kart Battle is a real-time multiplayer kart racing game with support for bo
 Here is how the infrastructure, namespaces, data flows, and monitoring paths are set up:
 
 ```mermaid
-graph TD
-    subgraph AWS_Cloud ["AWS Cloud (AP-South-1)"]
-        subgraph VPC ["VPC (10.0.0.0/16)"]
-            EIP["Elastic IP"] --> EC2["c7i-flex.large EC2 Instance"]
+flowchart TB
+    %% Styling Definitions
+    classDef aws fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#232F3E,font-weight:bold
+    classDef k8s fill:#326CE5,stroke:#fff,stroke-width:2px,color:#fff,font-weight:bold
+    classDef pod fill:#00ADD8,stroke:#fff,stroke-width:2px,color:#fff
+    classDef redis fill:#DC382D,stroke:#fff,stroke-width:2px,color:#fff
+    classDef jenkins fill:#D33833,stroke:#fff,stroke-width:2px,color:#fff
+    classDef ext fill:#111111,stroke:#00FF00,stroke-width:2px,color:#00FF00
+    classDef monitor fill:#E58A00,stroke:#fff,stroke-width:2px,color:#fff
+    classDef db fill:#4CAF50,stroke:#fff,stroke-width:2px,color:#fff
+
+    Client(["🌐 Player Web Browser"]):::ext
+    Github(["🐙 GitHub Repository"]):::ext
+    Developer(["👨‍💻 Ops / Administrator"]):::ext
+    DockerHub(["🐳 Docker Hub Registry"]):::ext
+
+    subgraph AWS ["☁️ AWS Cloud (AP-South-1)"]
+        direction TB
+        EIP["Elastic IP"]:::aws
+        
+        subgraph EC2 ["💻 c7i-flex.large EC2 (Bare-Metal Host)"]
+            direction TB
+            Jenkins["⚙️ Jenkins CI/CD (Port 8080)"]:::jenkins
+            Docker["🐋 Docker Engine"]:::pod
             
-            subgraph EC2_Host ["EC2 Bare-Metal Host OS"]
-                Jenkins["Jenkins CI/CD Server (Port 8080)"]
-                Docker["Docker Engine"]
-            end
-            
-            subgraph K3s_Cluster ["K3s Kubernetes Cluster"]
+            subgraph K3S ["☸️ K3s Kubernetes Cluster"]
                 direction TB
+                K3sAPI["Cluster API (Port 6443)"]:::k8s
                 
-                subgraph Default_Namespace ["Namespace: default"]
-                    ServiceLB["K3s ServiceLB (Port 80 -> Port 8000)"]
-                    
-                    Pod1["Neon Kart Pod 1"]
-                    Pod2["Neon Kart Pod 2"]
-                    
-                    Redis["Redis Deployment (1 Replica)"]
-                    RedisPVC["Persistent Volume Claim (1Gi local-path)"]
+                subgraph NS_Default ["Namespace: default"]
+                    ServiceLB["⚖️ K3s ServiceLB (Port 80 -> 8000)"]:::k8s
+                    Pod1["🏎️ Neon Kart Pod 1"]:::pod
+                    Pod2["🏎️ Neon Kart Pod 2"]:::pod
+                    Redis["🔴 Redis Deployment"]:::redis
+                    RedisPVC[("💾 Redis PVC (1Gi)")]:::db
                 end
                 
-                subgraph Monitoring_Namespace ["Namespace: monitoring"]
-                    Prometheus["Prometheus Server (Port 30090)"]
-                    Grafana["Grafana Dashboard (Port 30000)"]
-                    ServiceMonitor["Prometheus ServiceMonitor"]
+                subgraph NS_Monitor ["Namespace: monitoring"]
+                    Prometheus["📈 Prometheus Server (Port 30090)"]:::monitor
+                    Grafana["📊 Grafana Dashboard (Port 30000)"]:::monitor
+                    ServiceMonitor["🔍 ServiceMonitor"]:::k8s
                 end
             end
         end
     end
-    
-    %% Connections & Data Flow
-    Client["Player Web Browser"] -->|HTTP / WebSocket Port 80| ServiceLB
+
+    %% Connections
+    EIP --> EC2
+    Client -->|HTTP/WS| ServiceLB
     ServiceLB -->|Load Balance| Pod1
     ServiceLB -->|Load Balance| Pod2
-    
-    Pod1 <-->|Redis Pub/Sub Event Router| Redis
-    Pod2 <-->|Redis Pub/Sub Event Router| Redis
-    Redis <-->|Data Persistence| RedisPVC
-    
-    %% Monitoring Flow
-    ServiceMonitor -->|Auto-Discover Target| Pod1
-    ServiceMonitor -->|Auto-Discover Target| Pod2
+    Pod1 <-->|Pub/Sub| Redis
+    Pod2 <-->|Pub/Sub| Redis
+    Redis <-->|Persist| RedisPVC
+
+    %% Monitoring
+    ServiceMonitor -.->|Auto-Discover| Pod1
+    ServiceMonitor -.->|Auto-Discover| Pod2
     Prometheus -->|Scrape /metrics| ServiceMonitor
     Grafana -->|Query Metrics| Prometheus
-    Developer["Ops / Administrator"] -->|View Analytics| Grafana
-    
-    %% CI/CD flow
-    Github["GitHub Repository"] -->|Trigger Push| Jenkins
-    Jenkins -->|1. Run npm audit and Trivy fs scan| Docker
-    Jenkins -->|2. Build and Push Image| DockerHub["Docker Hub Registry"]
-    Jenkins -->|3. Mutate k8s/deployment.yaml| K3sAPI["K3s Cluster API Port 6443"]
+    Developer -->|View Dashboard| Grafana
+
+    %% CI/CD
+    Github -->|Push Webhook| Jenkins
+    Jenkins -->|1. Test & Scan| Docker
+    Jenkins -->|2. Build & Push| DockerHub
+    Jenkins -->|3. Mutate YAML| K3sAPI
 ```
 
 ---
@@ -191,28 +205,32 @@ To keep the Redis database from bloating with temporary guest data:
 The [Jenkinsfile](./Jenkinsfile) automates the full build, security validation, and deployment cycle:
 
 ```mermaid
-graph TD
-    Start([Start Build]) --> Checkout["Stage 1: Checkout (Pull from Git)"]
-    Checkout --> Install["Stage 2: Install Dependencies (NPM install)"]
+flowchart TD
+    %% Styling
+    classDef stage fill:#2B3137,stroke:#24292E,stroke-width:2px,color:#FFF,font-weight:bold
+    classDef security fill:#D73A49,stroke:#CB2431,stroke-width:2px,color:#FFF,font-weight:bold
+    classDef deploy fill:#0366D6,stroke:#005CC5,stroke-width:2px,color:#FFF,font-weight:bold
+    classDef success fill:#28A745,stroke:#22863A,stroke-width:2px,color:#FFF,font-weight:bold
+    classDef endpt fill:#6F42C1,stroke:#5A32A3,stroke-width:2px,color:#FFF,font-weight:bold
+
+    Start([🚀 Start Build]):::success --> Checkout["📥 Stage 1: Checkout (Git)"]:::stage
+    Checkout --> Install["📦 Stage 2: Install Dependencies (NPM)"]:::stage
     
-    subgraph Security_Scans ["Stage 3: Parallel Security Scans"]
-        NpmAudit["npm audit<br/>(NPM Dependency CVEs)"]
-        TrivyScan["Trivy File Scan<br/>(Filesystem Vulnerabilities)"]
+    subgraph Security_Scans ["🛡️ Stage 3: Parallel Security Validation"]
+        NpmAudit["⚠️ npm audit<br/>(NPM CVEs)"]:::security
+        TrivyScan["🔎 Trivy File Scan<br/>(FS Vulnerabilities)"]:::security
     end
     
     Install --> NpmAudit
     Install --> TrivyScan
     
-    NpmAudit --> BuildPush["Stage 4: Docker Build & Push (Docker Hub / Trivy)"]
+    NpmAudit --> BuildPush["🐳 Stage 4: Docker Build & Push"]:::stage
     TrivyScan --> BuildPush
     
-    BuildPush --> UpdateManifest["Stage 5: Update K8s Manifest (Surgically update tag)"]
-    UpdateManifest --> DeployK3s["Stage 6: Deploy to Kubernetes (kubectl apply)"]
-    DeployK3s --> VerifyMetrics["Stage 7: Verify Observability (Prometheus & Grafana)"]
-    VerifyMetrics --> End([Rollout Complete])
-
-    style Start fill:#4caf50,stroke:#388e3c,color:#fff
-    style End fill:#2196f3,stroke:#1976d2,color:#fff
+    BuildPush --> UpdateManifest["📝 Stage 5: Mutate K8s Manifest"]:::stage
+    UpdateManifest --> DeployK3s["☸️ Stage 6: Deploy to K3s (kubectl)"]:::deploy
+    DeployK3s --> VerifyMetrics["📊 Stage 7: Verify Observability"]:::endpt
+    VerifyMetrics --> End([✅ Rollout Complete]):::success
 ```
 
 1. **Checkout:** Clones the repository.

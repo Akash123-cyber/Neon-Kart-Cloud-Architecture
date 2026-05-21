@@ -11,7 +11,7 @@
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 <p align="center">
-  <video src="img/demo/homepage%20.mp4" width="100%" autoplay loop muted playsinline style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);"></video>
+  <video src="https://raw.githubusercontent.com/Akash123-cyber/Neon-Kart-Cloud-Architecture/main/img/demo/homepage%20.mp4" width="100%" autoplay loop muted playsinline style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);"></video>
 </p>
 
 Neon Kart Battle is a real-time multiplayer kart racing game with support for both PvP rooms and solo bot matches. It is built on a cost-optimized, self-managed cloud architecture. Instead of using expensive managed services, the entire stack runs on a lightweight **K3s (Kubernetes)** cluster provisioned with **Terraform**, deployed automatically via **Jenkins**, and monitored using **Prometheus & Grafana**.
@@ -141,7 +141,7 @@ To prevent broadcasting unnecessary events to all players, the game groups activ
 3. **Authoritative Pod Routing (Master Room Ownership):** When a user creates a room, the specific Node.js pod that handled the request registers itself in Redis as the authoritative host ("Master Owner") for that lobby. Other players who join query Redis to find this owner pod, routing their keystrokes and collision events directly to it to avoid state desync.
 
 <p align="center">
-  <video src="img/demo/PVP.mp4" width="100%" autoplay loop muted playsinline style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);"></video>
+  <video src="https://raw.githubusercontent.com/Akash123-cyber/Neon-Kart-Cloud-Architecture/main/img/demo/PVP.mp4" width="100%" autoplay loop muted playsinline style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);"></video>
 </p>
 
 ### Interpolation (LERP)
@@ -169,7 +169,7 @@ User credentials are hashed using `bcrypt` and stored in Redis hashes (`user:${u
 - **Stored Data:** `password_hash`, `wins`, `matches_played`, and `high_score`.
 
 <p align="center">
-  <video src="img/demo/auth.mp4" width="80%" autoplay loop muted playsinline style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);"></video>
+  <video src="https://raw.githubusercontent.com/Akash123-cyber/Neon-Kart-Cloud-Architecture/main/img/demo/auth.mp4" width="80%" autoplay loop muted playsinline style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.4);"></video>
 </p>
 
 ### 2. Guest Sessions (Hybrid In-Memory & Local Storage)

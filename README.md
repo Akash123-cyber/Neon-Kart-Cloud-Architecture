@@ -107,27 +107,34 @@ graph TD
 ## 📁 Repository Directory Structure
 
 ```bash
+├── .dockerignore                   # Exclusions for Docker image builds
+├── .gitignore                      # Git tracking exclusions
 ├── Dockerfile                      # Multi-stage production container build (Node 18 Alpine)
 ├── Jenkinsfile                     # 7-stage automated DevSecOps and deployment pipeline
+├── package-lock.json               # Locked dependency versions
 ├── package.json                    # Node dependencies (Express, Socket.IO, prom-client, Redis, Bcryptjs)
+├── README.md                       # Core architectural and deployment documentation
 ├── server.js                       # Game server: matchmaking, Redis event broker, auth routes, game loop
 ├── game.js                         # Game client: Canvas rendering, client LERP, Sound Synth, Bot AI
 ├── index.html                      # Glassmorphism UI lobby interfaces and HTML5 canvas container
 ├── style.css                       # Modern CSS styling (Glassmorphism layout, animations)
 ├── neon-kart-grafana-dashboard.json # Pre-configured JSON dashboard for Grafana imports
+├── img/                            # Static media and scenario recordings
+│   ├── demo/
+│   │   ├── PVP.gif                 # PvP Lobby preview
+│   │   ├── auth.gif                # Authentication screen preview
+│   │   └── homepage.gif            # Splash/Homepage UI preview
+│   ├── desert.png                  # Track asset
+│   ├── jungle.png                  # Track asset
+│   └── snow.png                    # Track asset
 ├── k8s/                            # Kubernetes Orchestration manifests
 │   ├── deployment.yaml             # Horizontally-scaled game server pods config with liveness/readiness probes
 │   ├── service.yaml                # LoadBalancer Service mapping traffic (port 80 -> 8000)
 │   ├── redis.yaml                  # Persistent Redis database Deployment, Service, and local-path PVC
 │   └── prometheus-servicemonitor.yaml # ServiceMonitor telling Prometheus Operator to scrape metrics
-├── terraform/                      # Infrastructure as Code manifests
-│   └── main.tf                     # Provisions AWS VPC, Security Group, EIP, EC2 instance, and user_data scripts
-└── ProjectRelatedMarkdownFiles/    # Extended architectural research documentation
-    ├── technical_architecture.md   # Core engine specs, networking models, and authentication logic
-    ├── Implementation.md           # Step-by-step checklist of development phases
-    ├── k3s_architecture_guide.md   # In-depth mechanics of K3s, ServiceLB, and Traefik configurations
-    ├── JENKINS_SETUP_GUIDE.md      # Detailed Jenkins initialization guide
-    └── terraform_architecture_guide.md # Concepts of declarative IaC and AWS bootstrapping script details
+└── terraform/                      # Infrastructure as Code manifests
+    ├── .terraform.lock.hcl         # Lock file for Terraform providers
+    └── main.tf                     # Provisions AWS VPC, Security Group, EIP, EC2 instance, and user_data scripts
 ```
 
 ---

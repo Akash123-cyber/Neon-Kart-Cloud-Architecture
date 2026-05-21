@@ -11,7 +11,7 @@
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 <p align="center">
-  ![Homepage Preview](img/demo/homepage.gif)
+  <img src="img/demo/homepage.gif" width="100%" alt="Homepage Preview">
 </p>
 
 Neon Kart Battle is a real-time multiplayer kart racing game with support for both PvP rooms and solo bot matches. It is built on a cost-optimized, self-managed cloud architecture. Instead of using expensive managed services, the entire stack runs on a lightweight **K3s (Kubernetes)** cluster provisioned with **Terraform**, deployed automatically via **Jenkins**, and monitored using **Prometheus & Grafana**.
@@ -80,26 +80,26 @@ graph TD
     end
     
     %% Connections & Data Flow
-    Client["Player Web Browser"] -->|"HTTP / WebSocket (Port 80)"| ServiceLB
-    ServiceLB -->|"Load Balance"| Pod1
-    ServiceLB -->|"Load Balance"| Pod2
+    Client["Player Web Browser"] -->|HTTP / WebSocket Port 80| ServiceLB
+    ServiceLB -->|Load Balance| Pod1
+    ServiceLB -->|Load Balance| Pod2
     
-    Pod1 <-->|"Redis Pub/Sub Event Router"| Redis
-    Pod2 <-->|"Redis Pub/Sub Event Router"| Redis
-    Redis <-->|"Data Persistence"| RedisPVC
+    Pod1 <-->|Redis Pub/Sub Event Router| Redis
+    Pod2 <-->|Redis Pub/Sub Event Router| Redis
+    Redis <-->|Data Persistence| RedisPVC
     
     %% Monitoring Flow
-    ServiceMonitor -->|"Auto-Discover Target"| Pod1
-    ServiceMonitor -->|"Auto-Discover Target"| Pod2
-    Prometheus -->|"Scrape /metrics"| ServiceMonitor
-    Grafana -->|"Query Metrics"| Prometheus
-    Developer["Ops / Administrator"] -->|"View Analytics"| Grafana
+    ServiceMonitor -->|Auto-Discover Target| Pod1
+    ServiceMonitor -->|Auto-Discover Target| Pod2
+    Prometheus -->|Scrape /metrics| ServiceMonitor
+    Grafana -->|Query Metrics| Prometheus
+    Developer["Ops / Administrator"] -->|View Analytics| Grafana
     
     %% CI/CD flow
-    Github["GitHub Repository"] -->|"Trigger Push"| Jenkins
-    Jenkins -->|"1. Run npm audit & Trivy fs scan"| Docker
-    Jenkins -->|"2. Build & Push Image"| DockerHub["Docker Hub Registry"]
-    Jenkins -->|"3. Mutate k8s/deployment.yaml"| K3sAPI["K3s Cluster API (Port 6443)"]
+    Github["GitHub Repository"] -->|Trigger Push| Jenkins
+    Jenkins -->|1. Run npm audit and Trivy fs scan| Docker
+    Jenkins -->|2. Build and Push Image| DockerHub["Docker Hub Registry"]
+    Jenkins -->|3. Mutate k8s/deployment.yaml| K3sAPI["K3s Cluster API Port 6443"]
 ```
 
 ---
@@ -141,7 +141,7 @@ To prevent broadcasting unnecessary events to all players, the game groups activ
 3. **Authoritative Pod Routing (Master Room Ownership):** When a user creates a room, the specific Node.js pod that handled the request registers itself in Redis as the authoritative host ("Master Owner") for that lobby. Other players who join query Redis to find this owner pod, routing their keystrokes and collision events directly to it to avoid state desync.
 
 <p align="center">
-  ![PvP Gameplay](img/demo/PVP.gif)
+  <img src="img/demo/PVP.gif" width="100%" alt="PvP Gameplay">
 </p>
 
 ### Interpolation (LERP)
@@ -169,7 +169,7 @@ User credentials are hashed using `bcrypt` and stored in Redis hashes (`user:${u
 - **Stored Data:** `password_hash`, `wins`, `matches_played`, and `high_score`.
 
 <p align="center">
-  ![Authentication Flow](img/demo/auth.gif)
+  <img src="img/demo/auth.gif" width="80%" alt="Authentication Flow">
 </p>
 
 ### 2. Guest Sessions (Hybrid In-Memory & Local Storage)

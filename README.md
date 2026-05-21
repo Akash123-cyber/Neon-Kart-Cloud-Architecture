@@ -76,26 +76,26 @@ graph TD
     end
     
     %% Connections & Data Flow
-    Client["Player Web Browser"] -->|HTTP / WebSocket (Port 80)| ServiceLB
-    ServiceLB -->|Load Balance| Pod1
-    ServiceLB -->|Load Balance| Pod2
+    Client["Player Web Browser"] -->|"HTTP / WebSocket (Port 80)"| ServiceLB
+    ServiceLB -->|"Load Balance"| Pod1
+    ServiceLB -->|"Load Balance"| Pod2
     
-    Pod1 <-->|Redis Pub/Sub Event Router| Redis
-    Pod2 <-->|Redis Pub/Sub Event Router| Redis
-    Redis <-->|Data Persistence| RedisPVC
+    Pod1 <-->|"Redis Pub/Sub Event Router"| Redis
+    Pod2 <-->|"Redis Pub/Sub Event Router"| Redis
+    Redis <-->|"Data Persistence"| RedisPVC
     
     %% Monitoring Flow
-    ServiceMonitor -->|Auto-Discover Target| Pod1
-    ServiceMonitor -->|Auto-Discover Target| Pod2
-    Prometheus -->|Scrape /metrics| ServiceMonitor
-    Grafana -->|Query Metrics| Prometheus
-    Developer["Ops / Administrator"] -->|View Analytics| Grafana
+    ServiceMonitor -->|"Auto-Discover Target"| Pod1
+    ServiceMonitor -->|"Auto-Discover Target"| Pod2
+    Prometheus -->|"Scrape /metrics"| ServiceMonitor
+    Grafana -->|"Query Metrics"| Prometheus
+    Developer["Ops / Administrator"] -->|"View Analytics"| Grafana
     
     %% CI/CD flow
-    Github["GitHub Repository"] -->|Trigger Push| Jenkins
-    Jenkins -->|1. Run npm audit & Trivy fs scan| Docker
-    Jenkins -->|2. Build & Push Image| DockerHub["Docker Hub Registry"]
-    Jenkins -->|3. Mutate k8s/deployment.yaml| K3sAPI["K3s Cluster API (Port 6443)"]
+    Github["GitHub Repository"] -->|"Trigger Push"| Jenkins
+    Jenkins -->|"1. Run npm audit & Trivy fs scan"| Docker
+    Jenkins -->|"2. Build & Push Image"| DockerHub["Docker Hub Registry"]
+    Jenkins -->|"3. Mutate k8s/deployment.yaml"| K3sAPI["K3s Cluster API (Port 6443)"]
 ```
 
 ---
